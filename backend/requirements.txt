@@ -1,6 +1,3 @@
 Flask
 Flask-SQLAlchemy
 Flask-CORS
-gunicorn
-flask-socketio
-simple-websocket
