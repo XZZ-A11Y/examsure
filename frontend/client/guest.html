@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamSure - 游客版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #ff9ff3 100%);
+            color: #334155;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        header div {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .paper-list {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .paper-list h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+        
+        .paper-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .paper-item:last-child {
+            border-bottom: none;
+        }
+        
+        .paper-item:hover {
+            transform: translateX(8px);
+        }
+        
+        .paper-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        
+        .paper-info {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .guest-notice {
+            background-color: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #92400e;
+        }
+        
+        .guest-notice h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .guest-notice p {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .guest-notice a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .guest-notice a:hover {
+            text-decoration: underline;
+        }
+        
+        /* 下线提示模态框 */
+        .offline-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .offline-modal-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .offline-modal-content h2 {
+            color: #ef4444;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        
+        .offline-modal-content p {
+            color: #64748b;
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .offline-modal-content .close-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .offline-modal-content .close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+            }
+            
+            header div {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .container {
+                margin: 20px auto;
+                padding: 0 15px;
+            }
+            
+            .paper-list {
+                padding: 20px;
+            }
+            
+            .paper-item {
+                padding: 16px 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 20px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+            
+            .paper-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 下线提示模态框 -->
+    <div id="offlineModal" class="offline-modal">
+        <div class="offline-modal-content">
+            <h2>📢 游客版已下线</h2>
+            <p>游客版已于2025年12月31日下线，感谢你的一路相伴！</p>
+            <button class="close-btn" onclick="closeOfflineModal()">知道了</button>
+        </div>
+    </div>
+
+    <header>
+        <h1>ExamSure - 游客版</h1>
+        <div style="display: flex; align-items: center;">
+            <button class="btn" onclick="window.location.href='login.html'">登录</button>
+            <button class="btn" onclick="window.location.href='register.html'" style="margin-left: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">注册</button>
+            <a href="../admin/login.html" style="margin-left: 10px; color: #f59e0b; text-decoration: underline; font-size: 14px; font-weight: 600; cursor: pointer;">管理端</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="paper-list">
+            <h2>免费试卷列表</h2>
+            
+            <!-- 游客提示 -->
+            <div class="guest-notice">
+                <h3>📢 游客提示</h3>
+                <p>您当前以游客身份浏览，只能下载<strong>全员免费</strong>的试卷。</p>
+                <p>如需下载更多试卷，请<a href="login.html">登录</a>或<a href="register.html">注册</a>账号。</p>
+                <p>登录后可享受会员特权，下载更多优质试卷！</p>
+            </div>
+            
+            <!-- 搜索功能 -->
+            <div style="margin-bottom: 20px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px; color: #1e293b; font-size: 16px;">搜索试卷</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="searchInput" style="font-size: 14px; margin-bottom: 5px; display: block; color: #64748b;">搜索标题</label>
+                        <input type="text" id="searchInput" placeholder="输入试卷标题" style="width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div style="display: flex; align-items: end; gap: 10px;">
+                        <button class="btn" onclick="searchPapers()" style="padding: 8px 16px; font-size: 14px;">搜索</button>
+                        <button class="btn" onclick="resetFilters()" style="padding: 8px 16px; font-size: 14px; background: linear-gradient(135deg, #64748b 0%, #475569 100%);">重置</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="papersContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时显示下线提示
+        window.onload = function() {
+            document.getElementById('offlineModal').style.display = 'flex';
+        };
+
+        // 关闭下线提示模态框
+        function closeOfflineModal() {
+            document.getElementById('offlineModal').style.display = 'none';
+        }
+
+        // 加载试卷列表
+        function loadPapers(searchParams = {}) {
+            // 构建查询字符串，只获取全员免费的试卷
+            const queryString = new URLSearchParams({
+                ...searchParams,
+                price_type: 'free_all'
+            }).toString();
+            
+            const url = `http://192.168.1.12:5000/client/papers?${queryString}`;
+            
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const container = document.getElementById('papersContainer');
+                    container.innerHTML = '';
+                    
+                    if (data.papers.length === 0) {
+                        container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 40px;">没有找到匹配的免费试卷</p>';
+                        return;
+                    }
+                    
+                    data.papers.forEach(paper => {
+                        const paperItem = document.createElement('div');
+                        paperItem.className = 'paper-item';
+                        
+                        // 价格显示
+                        let priceText = '<span style="color: #10b981; font-weight: 600;">全员免费</span>';
+                        
+                        // 试卷预览
+                        let previewHTML = '';
+                        if (paper.preview_image) {
+                            previewHTML = `<div style="margin: 10px 0;"><img src="http://192.168.1.12:5000/uploads/${paper.preview_image}" alt="${paper.title}预览" style="max-width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="showPreview('${paper.preview_image}')"></div>`;
+                        }
+                        
+                        paperItem.innerHTML = `
+                            <div class="paper-title">${paper.title}</div>
+                            <div class="paper-info">分类：${paper.category_name} | 上传时间：${new Date(paper.upload_time).toLocaleString()}</div>
+                            <div class="paper-price" style="margin: 10px 0; font-size: 16px;">${priceText}</div>
+                            ${previewHTML}
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn" onclick="previewPaper(${paper.id})">预览</button>
+                                <button class="download-btn" onclick="downloadPaper(${paper.id})">下载</button>
+                            </div>
+                        `;
+                        container.appendChild(paperItem);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('获取试卷列表失败：', error);
+                document.getElementById('papersContainer').innerHTML = '<p style="color: #ef4444; text-align: center; padding: 40px;">加载失败，请稍后重试</p>';
+            });
+        }
+        
+        // 搜索试卷
+        function searchPapers() {
+            const searchQuery = document.getElementById('searchInput').value;
+            
+            const searchParams = {};
+            if (searchQuery) searchParams.search = searchQuery;
+            
+            loadPapers(searchParams);
+        }
+        
+        // 重置过滤条件
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            loadPapers();
+        }
+        
+        // 显示预览图
+        function showPreview(imageUrl) {
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+            modal.style.zIndex = '9999';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.cursor = 'pointer';
+            
+            const img = document.createElement('img');
+            img.src = `http://192.168.1.12:5000/uploads/${imageUrl}`;
+            img.style.maxWidth = '90%';
+            img.style.maxHeight = '90%';
+            img.style.objectFit = 'contain';
+            
+            modal.appendChild(img);
+            document.body.appendChild(modal);
+            
+            modal.onclick = function() {
+                document.body.removeChild(modal);
+            };
+        }
+        
+        // 预览试卷
+        function previewPaper(paperId) {
+            window.open(`http://192.168.1.12:5000/client/paper/preview/${paperId}`, '_blank');
+        }
+        
+        // 下载试卷
+        function downloadPaper(paperId) {
+            const url = `http://192.168.1.12:5000/client/paper/download/${paperId}`;
+            
+            fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('下载失败');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `试卷_${paperId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('下载失败：', error);
+                alert('下载失败，请稍后重试');
+            });
+        }
+    </script>
+</body>
+</html>

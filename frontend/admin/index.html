@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamSure - 管理端</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .login-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        #adminInfo {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .container {
+            display: flex;
+            height: calc(100vh - 72px);
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 24px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .tab {
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: white;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            margin-right: 8px;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            top: 1px;
+        }
+        
+        .tab:hover {
+            background-color: #f1f5f9;
+            color: #3b82f6;
+        }
+        
+        .tab.active {
+            background-color: white;
+            color: #667eea;
+            border-color: #e2e8f0;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 24px;
+            border-radius: 0 8px 8px 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            border-top: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+        
+        .category-tree {
+            margin-top: 20px;
+        }
+        
+        .category-item {
+            margin: 8px 0;
+            padding-left: 24px;
+            font-size: 14px;
+            color: #475569;
+            transition: all 0.2s ease;
+        }
+        
+        .category-item:hover {
+            color: #667eea;
+            transform: translateX(4px);
+        }
+        
+        .category-item.root {
+            padding-left: 0;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px 0;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #64748b;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            box-sizing: border-box;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+            background-color: #fafafa;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            border-color: #667eea;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* 表单容器样式 */
+        #categoryForm {
+            background-color: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-top: 20px;
+        }
+        
+        /* 上传区域样式 */
+        .upload-section {
+            margin-top: 20px;
+            padding: 24px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            text-align: center;
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            border-color: #667eea;
+            background-color: #f1f5f9;
+        }
+        
+        /* 支付请求样式 */
+        .payment-request {
+            margin: 15px 0;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .payment-request:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .payment-request.pending {
+            border-left: 4px solid #f59e0b;
+            background-color: #fffbeb;
+        }
+        
+        .payment-request.confirmed {
+            border-left: 4px solid #10b981;
+            background-color: #ecfdf5;
+        }
+        
+        /* 编辑器容器样式 */
+        .word-editor {
+            margin-top: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 编辑器区域 */
+        #editorContainer {
+            margin-top: 20px;
+        }
+        
+        /* TinyMCE编辑器样式 */
+        .tox-tinymce {
+            border-radius: 8px !important;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 240px;
+                padding: 16px;
+            }
+            
+            .main-content {
+                padding: 16px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            
+            .main-content {
+                height: calc(100vh - 72px - 200px);
+            }
+        }
+        
+        /* 客服服务模态框 */
+        .customer-service-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .customer-service-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .customer-service-content h2 {
+            color: #ec4899;
+            font-size: 28px;
+            margin-bottom: 25px;
+        }
+        
+        .service-info p {
+            color: #334155;
+            font-size: 16px;
+            margin-bottom: 15px;
+            line-height: 1.8;
+            text-align: left;
+        }
+        
+        .customer-service-content .close-btn {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .customer-service-content .close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(236, 72, 153, 0.4);
+        }
+        
+        /* 聊天模态框样式 */
+        .chat-modal {
+            display: none;
+            position: fixed;
+            z-index: 10001;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            height: 500px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        
+        .chat-body {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background-color: #f8fafc;
+        }
+        
+        .chat-message {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-end;
+        }
+        
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+        
+        .chat-message.admin {
+            justify-content: flex-start;
+        }
+        
+        .chat-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+        
+        .chat-bubble.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-bubble.admin {
+            background-color: white;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .chat-footer {
+            padding: 16px;
+            background-color: white;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 聊天图标按钮样式 */
+        .chat-icon-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 9999;
+        }
+        
+        .chat-icon-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            transform: scale(1.1);
+        }
+        
+        /* 消息时间 */
+        .message-time {
+            font-size: 11px;
+            margin-top: 4px;
+            opacity: 0.7;
+            text-align: right;
+        }
+        
+        .message-time.admin {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- 客服服务模态框 -->
+    <div id="customerServiceModal" class="customer-service-modal">
+        <div class="customer-service-content">
+            <h2>🎧 客服服务</h2>
+            <div class="service-info">
+                <p><strong>📧 邮箱：</strong>support@examsure.com</p>
+                <p><strong>📱 电话：</strong>400-888-8888</p>
+                <p><strong>💬 微信：</strong>ExamSure_Service</p>
+                <p><strong>🕐 服务时间：</strong>周一至周日 9:00-22:00</p>
+                <p style="margin-top: 20px; color: #64748b; font-size: 14px;">如有任何问题，欢迎随时联系我们！</p>
+            </div>
+            <button class="close-btn" onclick="closeCustomerServiceModal()">x</button>
+        </div>
+    </div>
+
+    <!-- 聊天功能 -->
+    <button class="chat-icon-btn" onclick="toggleChatModal()">💬</button>
+    
+    <!-- 聊天模态框 -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header">
+            <h2>实时聊天</h2>
+            <button class="close-btn" onclick="toggleChatModal()" style="padding: 8px 12px; font-size: 16px; background: #ec4899; color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: 600; transition: all 0.3s ease; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">x</button>
+        </div>
+        <div style="display: flex; flex: 1; overflow: hidden; background-color: #f8fafc;">
+            <!-- 聊天内容区域 -->
+            <div style="flex: 1; display: flex; flex-direction: column; background-color: #f8fafc;">
+                <div class="chat-body" id="chatBody" style="flex: 1; padding: 20px; overflow-y: auto; background-color: #f8fafc;">
+                    <!-- 聊天消息将在这里动态生成 -->
+                </div>
+                <div class="chat-footer" style="padding: 20px; background-color: white; border-top: 1px solid #e2e8f0;">
+                    <div class="chat-input-container" style="display: flex; gap: 12px; align-items: flex-end;">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)" style="flex: 1; padding: 14px 20px; border: 2px solid #e2e8f0; border-radius: 28px; font-size: 14px; outline: none; transition: all 0.3s ease; background-color: #f1f5f9;">
+                        <button class="send-btn" onclick="sendMessage()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px 24px; border-radius: 28px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease; min-width: 80px;">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <h1>ExamSure</h1>
+        <div class="login-status" style="display: flex; align-items: center;">
+            <span id="adminInfo">管理员已登录</span>
+            <button class="btn" onclick="generateNewYearImage()" style="margin-left: 10px; background: linear-gradient(135deg, #ff9800 0%, #f44336 100%);">生成新年图片</button>
+            <button class="btn" onclick="refreshRequests()" style="margin-left: 10px; background-color: #2196F3;">刷新列表</button>
+            <a href="../client/login.html" style="margin-left: 10px; color: #10b981; text-decoration: underline; font-size: 14px; font-weight: 600; cursor: pointer;">用户端</a>
+            <a href="../client/guest.html" style="margin-left: 10px; color: #8b5cf6; text-decoration: underline; font-size: 14px; font-weight: 600; cursor: pointer;">游客版</a>
+            <a href="#" onclick="showCustomerService()" style="margin-left: 10px; color: #ec4899; text-decoration: underline; font-size: 14px; font-weight: 600; cursor: pointer;">客服服务</a>
+            <button class="btn btn-secondary" onclick="logout()" style="margin-left: 10px;">退出登录</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="sidebar">
+            <h2>试卷目录管理</h2>
+            <button class="btn" onclick="showAddCategoryForm()">添加目录</button>
+            <div id="categoryForm" style="display: none; margin-top: 15px;">
+                <div class="form-group">
+                    <label for="categoryName">目录名称</label>
+                    <input type="text" id="categoryName" placeholder="输入目录名称">
+                </div>
+                <div class="form-group">
+                    <label for="parentCategory">父目录</label>
+                    <select id="parentCategory">
+                        <option value="">根目录</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="addCategory()">确定</button>
+                <button class="btn btn-secondary" onclick="hideAddCategoryForm()">取消</button>
+            </div>
+            <div class="category-tree">
+                <h3>目录结构</h3>
+                <div id="categoryTree"></div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('upload', event)">上传试卷</div>
+                <div class="tab" onclick="showTab('online-edit', event)">在线编辑</div>
+                <div class="tab" onclick="showTab('paper-management', event)">试卷管理</div>
+                <div class="tab" onclick="showTab('paper-purchases', event)">试卷购买管理</div>
+                <div class="tab" onclick="showTab('payment', event)">支付管理</div>
+            </div>
+
+            <!-- 上传试卷 -->
+            <div class="tab-content active" id="upload">
+                <h2>上传试卷</h2>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="paperTitle">试卷标题</label>
+                        <input type="text" id="paperTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="paperCategory">所属分类</label>
+                        <select id="paperCategory" name="category_id" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="priceType">价格类型</label>
+                        <select id="priceType" name="price_type" onchange="togglePriceInput()" required>
+                            <option value="free_all">全员免费</option>
+                            <option value="free_member">会员免费</option>
+                            <option value="paid">全部收费</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="priceInputGroup" style="display: none;">
+                    <label for="originalPrice">原价（元）</label>
+                    <input type="number" id="originalPrice" name="original_price" min="0" step="0.01" placeholder="请输入原价">
+                    <small style="color: #64748b; display: block; margin-top: 5px;">
+                        会员将享受8折优惠
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="previewImage">预览图（可选）</label>
+                    <input type="file" id="previewImage" name="preview_image" accept="image/*">
+                    <small style="color: #64748b; display: block; margin-top: 5px;">
+                        建议上传清晰的预览图，格式支持JPG、PNG等常见图片格式
+                    </small>
+                </div>
+                <div class="upload-section">
+                    <h3>选择文件上传</h3>
+                    <input type="file" id="paperFile" name="file" required>
+                </div>
+                    <button type="submit" class="btn">上传试卷</button>
+                </form>
+            </div>
+
+            <!-- 在线编辑 -->
+            <div class="tab-content" id="online-edit">
+                <h2>在线编辑试卷</h2>
+                <div class="form-group">
+                    <label for="editTitle">试卷标题</label>
+                    <input type="text" id="editTitle" placeholder="输入试卷标题" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCategory">所属分类</label>
+                    <select id="editCategory" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="editPriceType">价格类型</label>
+                    <select id="editPriceType" name="price_type" onchange="toggleEditPriceInput()" required>
+                        <option value="free_all">全员免费</option>
+                        <option value="free_member">会员免费</option>
+                        <option value="paid">全部收费</option>
+                    </select>
+                </div>
+                <div class="form-group" id="editPriceInputGroup" style="display: none;">
+                    <label for="editOriginalPrice">原价（元）</label>
+                    <input type="number" id="editOriginalPrice" name="original_price" min="0" step="0.01" placeholder="请输入原价">
+                    <small style="color: #64748b; display: block; margin-top: 5px;">
+                        会员将享受8折优惠
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="editPreviewImage">预览图（可选）</label>
+                    <input type="file" id="editPreviewImage" name="preview_image" accept="image/*">
+                    <small style="color: #64748b; display: block; margin-top: 5px;">
+                        建议上传清晰的预览图，格式支持JPG、PNG等常见图片格式
+                    </small>
+                </div>
+                <div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px;">
+                    <h4>📌 使用指南</h4>
+                    <ol style="list-style-type: decimal; padding-left: 20px;">
+                        <li style="margin-bottom: 15px;">
+                            第一次使用请先在WPS网页版登录，登录后再使用：<br>
+                            <a href="https://www.kdocs.cn/latest" target="_blank" style="color: #007bff; text-decoration: none;">https://www.kdocs.cn/latest</a><br>
+                            <img src="../01.png" alt="使用指南步骤1" style="max-width: 100%; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        </li>
+                        <li style="margin-bottom: 15px;">
+                            选择登录方式，推荐使用QQ或手机号码登录：<br>
+                            <img src="../02.png" alt="使用指南步骤2" style="max-width: 100%; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        </li>
+                        <li style="margin-bottom: 15px;">
+                            完成登录后，可以直接在iframe中进行编辑操作：<br>
+                            <img src="../03.png" alt="使用指南步骤3" style="max-width: 100%; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        </li>
+                    </ol>
+                    <div style="margin-top: 10px; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px;">
+                        <p><strong style="color: #dc3545;">⚠️ 重要提醒：请勿退出登录，保持登录状态以便持续使用在线编辑功能</strong></p>
+                    </div>
+                </div>
+                <div style="margin: 20px 0; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;">
+                    <h3>金山文档在线编辑</h3>
+                    <iframe src="https://www.kdocs.cn/latest" width="100%" height="600px" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                <div class="upload-section" style="margin-top: 20px; padding: 20px; border: 2px dashed #ddd; border-radius: 4px;">
+                    <h3>📤 上传编辑好的试卷</h3>
+                    <form id="onlineEditForm" enctype="multipart/form-data">
+                        <input type="file" id="onlineEditFile" name="file" required style="margin-bottom: 10px;">
+                        <button type="submit" class="btn">上传试卷</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 试卷管理 -->
+            <div class="tab-content" id="paper-management">
+                <h2>试卷管理</h2>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn" onclick="loadPapers()">刷新试卷列表</button>
+                </div>
+                <div id="papersList">
+                    <!-- 试卷列表将在这里动态生成 -->
+                </div>
+            </div>
+            
+            <!-- 试卷购买管理 -->
+            <div class="tab-content" id="paper-purchases">
+                <h2>试卷购买管理</h2>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn" onclick="loadPaperPurchases()">刷新购买请求</button>
+                </div>
+                <div id="paperPurchasesContainer"></div>
+            </div>
+            
+            <!-- 支付管理 -->
+            <div class="tab-content" id="payment">
+                <h2>支付请求管理</h2>
+                <div id="paymentRequests"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 显示客服服务模态框
+        function showCustomerService() {
+            event.preventDefault();
+            document.getElementById('customerServiceModal').style.display = 'flex';
+        }
+
+        // 关闭客服服务模态框
+        function closeCustomerServiceModal() {
+            document.getElementById('customerServiceModal').style.display = 'none';
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            // 检查是否已登录
+            checkAdminLogin();
+            loadCategories();
+            loadPaymentRequests();
+            togglePriceInput(); // 初始化价格输入框显示状态
+            // 初始加载试卷列表（当切换到试卷管理标签时会重新加载）
+        };
+        
+        // 检查管理员登录状态
+        function checkAdminLogin() {
+            // 向服务器发送请求检查登录状态
+            fetch('http://192.168.1.12:5000/admin/categories', {
+                credentials: 'include'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // 未登录或登录已过期，跳转到登录页面
+                    window.location.href = 'login.html';
+                }
+            })
+            .catch(error => {
+                console.error('检查登录状态失败：', error);
+                // 发生错误时，跳转到登录页面
+                window.location.href = 'login.html';
+            });
+        }
+        
+        // 切换价格输入框显示/隐藏
+        function togglePriceInput() {
+            const priceType = document.getElementById('priceType').value;
+            const priceInputGroup = document.getElementById('priceInputGroup');
+            const originalPriceInput = document.getElementById('originalPrice');
+            
+            if (priceType === 'paid') {
+                priceInputGroup.style.display = 'block';
+                originalPriceInput.required = true;
+            } else {
+                priceInputGroup.style.display = 'none';
+                originalPriceInput.required = false;
+                originalPriceInput.value = '';
+            }
+        }
+        
+        // 切换在线编辑价格输入框显示/隐藏
+        function toggleEditPriceInput() {
+            const priceType = document.getElementById('editPriceType').value;
+            const priceInputGroup = document.getElementById('editPriceInputGroup');
+            const originalPriceInput = document.getElementById('editOriginalPrice');
+            
+            if (priceType === 'paid') {
+                priceInputGroup.style.display = 'block';
+                originalPriceInput.required = true;
+            } else {
+                priceInputGroup.style.display = 'none';
+                originalPriceInput.required = false;
+                originalPriceInput.value = '';
+            }
+        }
+
+        // 显示选项卡
+        function showTab(tabName, event) {
+            // 隐藏所有选项卡内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            // 移除所有选项卡的活跃状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // 显示选中的选项卡内容
+            document.getElementById(tabName).classList.add('active');
+            // 设置选中的选项卡为活跃状态
+            event.currentTarget.classList.add('active');
+            
+            // 当切换到试卷管理标签时，自动加载试卷列表
+            if (tabName === 'paper-management') {
+                loadPapers();
+            }
+        }
+        
+        // 加载试卷列表
+        function loadPapers() {
+            fetch('http://192.168.1.12:5000/admin/papers', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const container = document.getElementById('papersList');
+                    container.innerHTML = '';
+                    
+                    if (data.papers.length === 0) {
+                        container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">暂无试卷</p>';
+                        return;
+                    }
+                    
+                    data.papers.forEach(paper => {
+                        const div = document.createElement('div');
+                        div.className = 'paper-item';
+                        div.style.padding = '20px';
+                        div.style.margin = '15px 0';
+                        div.style.border = '1px solid #e2e8f0';
+                        div.style.borderRadius = '8px';
+                        div.style.backgroundColor = 'white';
+                        div.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
+                        div.style.transition = 'all 0.3s ease';
+                        
+                        div.onmouseover = function() {
+                            this.style.transform = 'translateY(-2px)';
+                            this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+                        };
+                        
+                        div.onmouseout = function() {
+                            this.style.transform = 'translateY(0)';
+                            this.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
+                        };
+                        
+                        div.innerHTML = `
+                            <h3 style="margin-bottom: 10px; color: #1e293b;">${paper.title}</h3>
+                            <p style="margin-bottom: 10px; color: #64748b;">分类：${paper.category_name}</p>
+                            <p style="margin-bottom: 15px; color: #64748b; font-size: 14px;">上传时间：${new Date(paper.upload_time).toLocaleString()}</p>
+                            <div style="display: flex; gap: 10px;">
+                                <select id="categorySelect_${paper.id}" style="padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 6px; flex: 1;"></select>
+                                <button class="btn btn-secondary" onclick="updatePaperCategory(${paper.id})" style="padding: 8px 16px; font-size: 12px;">修改目录</button>
+                                <button class="btn" onclick="deletePaper(${paper.id})" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 8px 16px; font-size: 12px;">删除</button>
+                            </div>
+                        `;
+                        
+                        container.appendChild(div);
+                        
+                        // 填充分类选择框
+                        const select = document.getElementById(`categorySelect_${paper.id}`);
+                        populateSingleCategorySelect(select, paper.category_id);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('加载试卷列表失败：', error);
+            });
+        }
+        
+        // 填充单个分类选择框
+        function populateSingleCategorySelect(select, currentCategoryId) {
+            fetch('http://192.168.1.12:5000/admin/categories', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    select.innerHTML = '';
+                    
+                    // 递归添加分类
+                    function addCategories(categories, level = 0) {
+                        categories.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category.id;
+                            option.textContent = ' '.repeat(level * 2) + category.name;
+                            if (category.id === currentCategoryId) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                            
+                            if (category.children && category.children.length > 0) {
+                                addCategories(category.children, level + 1);
+                            }
+                        });
+                    }
+                    
+                    addCategories(data.categories);
+                }
+            })
+            .catch(error => {
+                console.error('加载分类失败：', error);
+            });
+        }
+        
+        // 删除试卷
+        function deletePaper(paperId) {
+            if (confirm('确定要删除这篇试卷吗？')) {
+                fetch(`http://192.168.1.12:5000/admin/paper/delete/${paperId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('试卷删除成功');
+                        loadPapers();
+                    } else {
+                        alert('删除失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('删除试卷失败：', error);
+                    alert('删除失败，请稍后重试');
+                });
+            }
+        }
+        
+        // 修改试卷目录
+        function updatePaperCategory(paperId) {
+            const select = document.getElementById(`categorySelect_${paperId}`);
+            const newCategoryId = select.value;
+            
+            fetch(`http://192.168.1.12:5000/admin/paper/update-category/${paperId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ category_id: parseInt(newCategoryId) }),
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('目录修改成功');
+                    loadPapers();
+                } else {
+                    alert('修改失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('修改目录失败：', error);
+                alert('修改失败，请稍后重试');
+            });
+        }
+
+        // 加载分类列表
+        function loadCategories() {
+            fetch('http://192.168.1.12:5000/admin/categories', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    buildCategoryTree(data.categories);
+                    populateCategorySelect(data.categories);
+                }
+            })
+            .catch(error => {
+                console.error('加载分类失败：', error);
+            });
+        }
+
+        // 构建分类树
+        function buildCategoryTree(categories) {
+            const treeContainer = document.getElementById('categoryTree');
+            treeContainer.innerHTML = '';
+            
+            function buildTree(categories, level = 0) {
+                categories.forEach(category => {
+                    const div = document.createElement('div');
+                    div.className = `category-item ${level === 0 ? 'root' : ''}`;
+                    div.style.paddingLeft = `${level * 20}px`;
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.justifyContent = 'space-between';
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = category.name;
+                    nameSpan.style.flex = '1';
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '删除';
+                    deleteBtn.className = 'btn';
+                    deleteBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                    deleteBtn.style.padding = '4px 8px';
+                    deleteBtn.style.fontSize = '12px';
+                    deleteBtn.style.marginLeft = '10px';
+                    deleteBtn.onclick = function() { deleteCategory(category.id); };
+                    
+                    div.appendChild(nameSpan);
+                    div.appendChild(deleteBtn);
+                    treeContainer.appendChild(div);
+                    
+                    if (category.children && category.children.length > 0) {
+                        buildTree(category.children, level + 1);
+                    }
+                });
+            }
+            
+            buildTree(categories);
+        }
+
+        // 删除分类
+        function deleteCategory(categoryId) {
+            if (confirm('确定要删除这个目录吗？删除后该目录下的所有试卷将被移至根目录。')) {
+                fetch(`http://192.168.1.12:5000/admin/category/delete/${categoryId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('目录删除成功');
+                        loadCategories();
+                    } else {
+                        alert('删除失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('删除目录失败：', error);
+                    alert('删除失败，请稍后重试');
+                });
+            }
+        }
+        
+        // 填充分类选择框
+        function populateCategorySelect(categories) {
+            const selectElements = [
+                document.getElementById('parentCategory'),
+                document.getElementById('paperCategory'),
+                document.getElementById('editCategory')
+            ];
+            
+            selectElements.forEach(select => {
+                // 保存当前选中值
+                const currentValue = select.value;
+                
+                // 清空除了第一个选项外的所有选项
+                if (select.id === 'parentCategory') {
+                    select.innerHTML = '<option value="">根目录</option>';
+                } else {
+                    select.innerHTML = '';
+                }
+                
+                // 递归添加分类
+                function addCategories(categories, level = 0) {
+                    categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = ' '.repeat(level * 2) + category.name;
+                        select.appendChild(option);
+                        
+                        if (category.children && category.children.length > 0) {
+                            addCategories(category.children, level + 1);
+                        }
+                    });
+                }
+                
+                addCategories(categories);
+                
+                // 恢复选中值
+                select.value = currentValue;
+            });
+        }
+
+        // 显示添加分类表单
+        function showAddCategoryForm() {
+            document.getElementById('categoryForm').style.display = 'block';
+        }
+
+        // 隐藏添加分类表单
+        function hideAddCategoryForm() {
+            document.getElementById('categoryForm').style.display = 'none';
+            document.getElementById('categoryName').value = '';
+            document.getElementById('parentCategory').value = '';
+        }
+
+        // 添加分类
+        function addCategory() {
+            const name = document.getElementById('categoryName').value;
+            const parentId = document.getElementById('parentCategory').value || null;
+            
+            if (!name) {
+                alert('请输入目录名称');
+                return;
+            }
+            
+            alert('开始添加目录...');
+            
+            fetch('http://192.168.1.12:5000/admin/category/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, parent_id: parentId }),
+                credentials: 'include'
+            })
+            .then(response => {
+                alert('服务器响应：' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                alert('返回数据：' + JSON.stringify(data));
+                if (data.success) {
+                    alert('目录添加成功');
+                    hideAddCategoryForm();
+                    loadCategories();
+                } else {
+                    alert('添加失败：' + (data.message || '未知错误'));
+                }
+            })
+            .catch(error => {
+                console.error('添加目录失败：', error);
+                alert('添加失败：网络错误或服务器问题\n' + error.message);
+            });
+        }
+
+        // 加载支付请求
+        function loadPaymentRequests() {
+            fetch('http://192.168.1.12:5000/admin/payment/requests', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const container = document.getElementById('paymentRequests');
+                    container.innerHTML = '';
+                    
+                    data.requests.forEach(req => {
+                        const div = document.createElement('div');
+                        div.className = `payment-request ${req.status}`;
+                        div.innerHTML = `
+                            <h3>支付请求 #${req.id}</h3>
+                            <p>用户名：${req.username}</p>
+                            <p>会员类型：${getMemberTypeText(req.member_type)}</p>
+                            <p>状态：${req.status === 'pending' ? '待确认' : '已确认'}</p>
+                            <p>创建时间：${new Date(req.create_time).toLocaleString()}</p>
+                            ${req.status === 'pending' ? `<button class="btn" onclick="confirmPayment(${req.id})">确认支付</button>` : ''}
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('加载支付请求失败：', error);
+            });
+        }
+        
+        // 刷新请求列表
+        function refreshRequests() {
+            alert('正在刷新请求列表...');
+            loadPaymentRequests();
+        }
+        
+        // 加载试卷购买请求
+        function loadPaperPurchases() {
+            fetch('http://192.168.1.12:5000/admin/paper/purchases', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const container = document.getElementById('paperPurchasesContainer');
+                    container.innerHTML = '';
+                    
+                    if (data.purchases.length === 0) {
+                        container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">暂无试卷购买请求</p>';
+                        return;
+                    }
+                    
+                    data.purchases.forEach(purchase => {
+                        const div = document.createElement('div');
+                        div.className = 'payment-request pending';
+                        div.innerHTML = `
+                            <h3>试卷购买请求 #${purchase.id}</h3>
+                            <p>用户名：${purchase.username}</p>
+                            <p>试卷名称：${purchase.paper_title}</p>
+                            <p>支付金额：¥${purchase.price.toFixed(2)}</p>
+                            <p>创建时间：${new Date(purchase.create_time).toLocaleString()}</p>
+                            <button class="btn" onclick="confirmPaperPurchase(${purchase.id})">确认支付</button>
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('加载试卷购买请求失败：', error);
+            });
+        }
+        
+        // 确认试卷购买
+        function confirmPaperPurchase(purchaseId) {
+            fetch(`http://192.168.1.12:5000/admin/paper/purchase/confirm/${purchaseId}`, {
+                method: 'POST',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('购买确认成功');
+                    loadPaperPurchases();
+                } else {
+                    alert('确认失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('确认购买失败：', error);
+            });
+        }
+
+        // 获取会员类型文本
+        function getMemberTypeText(type) {
+            switch(type) {
+                case '1day': return '1天会员';
+                case '1month': return '1月会员';
+                case '12year': return '12年会员';
+                default: return type;
+            }
+        }
+
+        // 确认支付
+        function confirmPayment(requestId) {
+            fetch(`http://192.168.1.12:5000/admin/payment/confirm/${requestId}`, {
+                method: 'POST',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('支付已确认');
+                    loadPaymentRequests();
+                }
+            })
+            .catch(error => {
+                console.error('确认支付失败：', error);
+            });
+        }
+
+        // 上传试卷表单提交
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('http://192.168.1.12:5000/admin/paper/upload', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('试卷上传成功');
+                    this.reset();
+                } else {
+                    alert('上传失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('上传失败：', error);
+                alert('上传失败，请稍后重试');
+            });
+        });
+
+        // 处理在线编辑上传表单
+        document.getElementById('onlineEditForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('editTitle').value;
+            const categoryId = document.getElementById('editCategory').value;
+            const priceType = document.getElementById('editPriceType').value;
+            const originalPrice = document.getElementById('editOriginalPrice').value || 0;
+            const file = document.getElementById('onlineEditFile').files[0];
+            const previewImage = document.getElementById('editPreviewImage').files[0];
+            
+            if (!title || !categoryId || !file) {
+                alert('请填写试卷标题、选择分类并选择文件');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('category_id', categoryId);
+            formData.append('price_type', priceType);
+            formData.append('original_price', originalPrice);
+            formData.append('file', file);
+            
+            // 添加预览图
+            if (previewImage) {
+                formData.append('preview_image', previewImage);
+            }
+            
+            fetch('http://192.168.1.12:5000/admin/paper/upload', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('试卷上传成功');
+                    this.reset();
+                    document.getElementById('editTitle').value = '';
+                    document.getElementById('editCategory').value = '';
+                    document.getElementById('editPriceType').value = 'free_all';
+                    document.getElementById('editPreviewImage').value = '';
+                    toggleEditPriceInput();
+                } else {
+                    alert('上传失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('上传失败：', error);
+                alert('上传失败，请稍后重试');
+            });
+        });
+        
+        // 退出登录功能
+        function logout() {
+            // 清除localStorage或sessionStorage中的登录状态
+            localStorage.removeItem('adminLoggedIn');
+            sessionStorage.removeItem('adminLoggedIn');
+            alert('已退出登录');
+            // 跳转到登录页面
+            window.location.href = 'login.html';
+        }
+        
+        // 生成新年图片功能
+        function generateNewYearImage() {
+            alert('新年图片生成功能已启动！\n\n该功能将生成一张精美的新年主题图片，包含以下元素：\n- 红色喜庆背景\n- 金色骏马图案\n- 新年祝福语\n- 祥云波浪装饰\n\n功能开发中，敬请期待！');
+        }
+        
+        // 旧的在线编辑上传函数（保留兼容）
+        function uploadOnlineEdit() {
+            alert('请使用下方的上传表单上传编辑好的试卷文件。');
+        }
+        
+        // 聊天功能相关代码
+        let socket = null;
+        let isChatOpen = false;
+        
+        // 初始化聊天功能
+        function initChat() {
+            // 连接WebSocket
+            socket = io('http://192.168.1.12:5000');
+            
+            // 连接事件
+            socket.on('connect', () => {
+                console.log('WebSocket连接成功');
+                // 加入聊天室
+                socket.emit('join_room', { room: 'admin_chat' });
+                // 加载聊天历史
+                loadChatHistory();
+            });
+            
+            // 接收消息事件
+            socket.on('receive_message', (data) => {
+                console.log('收到消息:', data);
+                addMessageToChat(data);
+            });
+            
+            // 断开连接事件
+            socket.on('disconnect', () => {
+                console.log('WebSocket连接断开');
+            });
+        }
+        
+        // 加载聊天历史记录
+        function loadChatHistory() {
+            fetch('http://192.168.1.12:5000/api/chat/history/admin_chat')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 清空聊天记录
+                        document.getElementById('chatBody').innerHTML = '';
+                        // 添加历史消息
+                        data.messages.forEach(message => {
+                            addMessageToChat(message);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载聊天历史失败:', error);
+                });
+        }
+        
+        // 添加消息到聊天界面
+        function addMessageToChat(message) {
+            const chatBody = document.getElementById('chatBody');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${message.sender_type}`;
+            messageDiv.style.marginBottom = '16px';
+            messageDiv.style.display = 'flex';
+            messageDiv.style.alignItems = 'flex-end';
+            messageDiv.style.gap = '12px';
+            
+            // 根据发送者类型设置消息位置
+            if (message.sender_type === 'admin') {
+                messageDiv.style.justifyContent = 'flex-start';
+            } else {
+                messageDiv.style.justifyContent = 'flex-end';
+            }
+            
+            // 消息气泡
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = `chat-bubble ${message.sender_type}`;
+            bubbleDiv.style.padding = '12px 16px';
+            bubbleDiv.style.borderRadius = '16px';
+            bubbleDiv.style.wordWrap = 'break-word';
+            bubbleDiv.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+            bubbleDiv.style.maxWidth = '70%';
+            
+            // 设置消息气泡样式
+            if (message.sender_type === 'admin') {
+                bubbleDiv.style.backgroundColor = 'white';
+                bubbleDiv.style.color = '#334155';
+                bubbleDiv.style.borderBottomLeftRadius = '4px';
+            } else {
+                bubbleDiv.style.backgroundColor = '#667eea';
+                bubbleDiv.style.color = 'white';
+                bubbleDiv.style.borderBottomRightRadius = '4px';
+            }
+            
+            // 发送者姓名
+            const senderNameDiv = document.createElement('div');
+            senderNameDiv.style.fontSize = '12px';
+            senderNameDiv.style.opacity = '0.8';
+            senderNameDiv.style.marginBottom = '4px';
+            senderNameDiv.style.fontWeight = '600';
+            senderNameDiv.textContent = message.sender_name;
+            bubbleDiv.appendChild(senderNameDiv);
+            
+            // 消息内容
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.style.fontSize = '14px';
+            messageContentDiv.style.lineHeight = '1.5';
+            messageContentDiv.textContent = message.message;
+            bubbleDiv.appendChild(messageContentDiv);
+            
+            // 时间
+            const timeDiv = document.createElement('div');
+            timeDiv.className = `message-time ${message.sender_type}`;
+            timeDiv.style.fontSize = '11px';
+            timeDiv.style.opacity = '0.7';
+            timeDiv.style.marginTop = '4px';
+            
+            // 格式化时间
+            const sendTime = new Date(message.send_time);
+            const formattedTime = `${String(sendTime.getDate()).padStart(2, '0')} ${String(sendTime.getHours()).padStart(2, '0')}:${String(sendTime.getMinutes()).padStart(2, '0')}:${String(sendTime.getSeconds()).padStart(2, '0')}`;
+            timeDiv.textContent = formattedTime;
+            
+            bubbleDiv.appendChild(timeDiv);
+            messageDiv.appendChild(bubbleDiv);
+            chatBody.appendChild(messageDiv);
+            
+            // 滚动到底部
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (message && socket) {
+                // 发送消息到服务器
+                socket.emit('send_message', {
+                    message: message,
+                    sender_id: 0, // 管理员ID为0
+                    sender_type: 'admin',
+                    room: 'admin_chat'
+                });
+                
+                // 清空输入框
+                chatInput.value = '';
+            }
+        }
+        
+        // 处理回车键发送消息
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // 切换聊天模态框显示/隐藏
+        function toggleChatModal() {
+            const chatModal = document.getElementById('chatModal');
+            isChatOpen = !isChatOpen;
+            
+            if (isChatOpen) {
+                chatModal.style.display = 'flex';
+                // 如果WebSocket未连接，初始化连接
+                if (!socket || !socket.connected) {
+                    initChat();
+                }
+            } else {
+                chatModal.style.display = 'none';
+            }
+        }
+        
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            // 聊天功能初始化
+            initChat();
+        });
+    </script>
+</body>
+</html>

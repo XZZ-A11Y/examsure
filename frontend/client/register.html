@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamSure - 注册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .container {
+            max-width: 420px;
+            width: 100%;
+            background: white;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .container:hover {
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        .form-group input:focus {
+            border-color: #667eea;
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* 添加按钮悬停效果 */
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.5s ease;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .login-link p {
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .login-link a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 500px) {
+            .container {
+                margin: 0 20px;
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ExamSure 注册</h1>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="email">邮箱</label>
+                <input type="email" id="email" name="email" required placeholder="请输入邮箱地址">
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>请完成人机验证</label>
+                <!-- Cloudflare Turnstile 验证 -->
+                <div class="cf-turnstile" data-sitekey="1x00000000000000000000AA" style="margin-top: 10px;"></div>
+            </div>
+            <button type="submit" class="btn">注册</button>
+        </form>
+        <div class="login-link">
+            已有账号？<a href="login.html">立即登录</a>
+        </div>
+        <div class="login-link" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+            <a href="guest.html" style="color: #667eea; text-decoration: none; font-size: 14px; font-weight: 600;">游客模式（无需登录）</a>
+        </div>
+        <div class="login-link" style="margin-top: 10px;">
+            <a href="../admin/login.html" style="color: #f59e0b; text-decoration: none; font-size: 14px; font-weight: 600;">管理端入口</a>
+        </div>
+    </div>
+
+    <!-- Cloudflare Turnstile 脚本 -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // 检查Cloudflare验证token
+            const token = document.querySelector('[name="cf-turnstile-response"]');
+            if (!token || !token.value) {
+                alert('请先完成人机验证');
+                return;
+            }
+            
+            fetch('http://192.168.1.12:5000/client/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    username, 
+                    email,
+                    password,
+                    cf_token: token.value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('注册成功，请登录');
+                    window.location.href = 'login.html';
+                } else {
+                    alert('注册失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('注册失败：', error);
+                alert('注册失败，请稍后重试');
+            });
+        });
+    </script>
+</body>
+</html>

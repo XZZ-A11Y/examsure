@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExamSure - 首页</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 新年主题样式 */
+        /* 雪花动画 */
+        @keyframes snowfall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+        
+        /* 波浪效果 */
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(2deg); }
+            75% { transform: rotate(-2deg); }
+        }
+        
+        /* 心跳效果 */
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            14% { transform: scale(1.1); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.1); }
+            70% { transform: scale(1); }
+        }
+        
+        /* 雪花样式 */
+        .snowflake {
+            position: fixed;
+            background: #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            animation: snowfall linear infinite;
+        }
+        
+        /* 新年贺词样式 */
+        .new-year-wishes {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #ff9800 0%, #f44336 100%);
+            color: white;
+            text-align: center;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 101;
+            animation: wave 3s ease-in-out infinite, heartbeat 2s ease-in-out infinite;
+        }
+        
+        /* 左侧新年图片样式 */
+        .left-new-year-image {
+            position: fixed;
+            left: 0;
+            top: 60px;
+            max-width: 50vw;
+            max-height: calc(100vh - 60px);
+            width: auto;
+            height: auto;
+            object-fit: cover;
+            opacity: 0.4;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        /* 右侧新年图片样式 */
+        .right-new-year-image {
+            position: fixed;
+            right: 0;
+            top: 60px;
+            max-width: 50vw;
+            max-height: calc(100vh - 60px);
+            width: auto;
+            height: auto;
+            object-fit: cover;
+            opacity: 0.4;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* 聊天模态框样式 */
+        .chat-modal {
+            display: none;
+            position: fixed;
+            z-index: 10001;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: white;
+            border-radius: 0;
+            box-shadow: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        
+        .chat-body {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            background-color: #f8fafc;
+        }
+        
+        .chat-message {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-end;
+        }
+        
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+        
+        .chat-message.admin {
+            justify-content: flex-start;
+        }
+        
+        .chat-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+        
+        .chat-bubble.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-bubble.admin {
+            background-color: white;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .chat-footer {
+            padding: 16px;
+            background-color: white;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 聊天图标按钮样式 */
+        .chat-icon-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 9999;
+        }
+        
+        .chat-icon-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            transform: scale(1.1);
+        }
+        
+        /* 消息时间 */
+        .message-time {
+            font-size: 11px;
+            margin-top: 4px;
+            opacity: 0.7;
+            text-align: right;
+        }
+        
+        .message-time.admin {
+            text-align: left;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 50%, #ff9ff3 100%);
+            color: #334155;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        header div {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        #memberText {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .member-status {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .member-status:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .member-status h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        
+        #memberStatus {
+            font-size: 16px;
+            color: #64748b;
+        }
+        
+        .buy-member-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .buy-member-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: heartbeat 2s ease-in-out infinite;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .paper-list {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .paper-list h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+        
+        .paper-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .paper-item:last-child {
+            border-bottom: none;
+        }
+        
+        .paper-item:hover {
+            transform: translateX(8px);
+        }
+        
+        .paper-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        
+        .paper-info {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .download-btn.disabled {
+            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* 购买菜单样式 */
+        .buy-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            max-width: 800px;
+            width: 90%;
+        }
+        
+        /* 购买菜单内容布局 */
+        .buy-menu-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+        
+        /* 图片容器 */
+        .buy-menu-image {
+            flex: 1;
+            text-align: center;
+        }
+        
+        /* 选项容器 */
+        .buy-menu-options {
+            flex: 1;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+            backdrop-filter: blur(5px);
+        }
+        
+        .member-option {
+            margin: 15px 0;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: #f8fafc;
+        }
+        
+        .member-option:hover {
+            background-color: #f1f5f9;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        
+        .member-option h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        
+        .member-option p {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #64748b;
+            transition: all 0.3s ease;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close-btn:hover {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+        
+        .pay-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 25px;
+            width: 100%;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .pay-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+            }
+            
+            header div {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .container {
+                margin: 20px auto;
+                padding: 0 15px;
+            }
+            
+            .member-status, .paper-list {
+                padding: 20px;
+            }
+            
+            .paper-item {
+                padding: 16px 0;
+            }
+            
+            .buy-menu {
+                padding: 30px 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 20px;
+            }
+            
+            .buy-member-btn, .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+            
+            .paper-title {
+                font-size: 16px;
+            }
+        }
+        
+        /* 客服服务模态框 */
+        .customer-service-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .customer-service-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .customer-service-content h2 {
+            color: #ec4899;
+            font-size: 28px;
+            margin-bottom: 25px;
+        }
+        
+        .service-info p {
+            color: #334155;
+            font-size: 16px;
+            margin-bottom: 15px;
+            line-height: 1.8;
+            text-align: left;
+        }
+        
+        .customer-service-content .close-btn {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .customer-service-content .close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(236, 72, 153, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <!-- 客服服务模态框 -->
+    <div id="customerServiceModal" class="customer-service-modal">
+        <div class="customer-service-content">
+            <h2>🎧 客服服务</h2>
+            <div class="service-info">
+                <p><strong>📧 邮箱：</strong>support@examsure.com</p>
+                <p><strong>📱 电话：</strong>400-888-8888</p>
+                <p><strong>💬 微信：</strong>ExamSure_Service</p>
+                <p><strong>🕐 服务时间：</strong>周一至周日 9:00-22:00</p>
+                <p style="margin-top: 20px; color: #64748b; font-size: 14px;">如有任何问题，欢迎随时联系我们！</p>
+            </div>
+            <button class="close-btn" onclick="closeCustomerServiceModal()">关闭</button>
+        </div>
+    </div>
+
+    <!-- 左侧新年图片 -->
+    <img src="生成新年图片.png" alt="新年图片" class="left-new-year-image">
+        
+        <!-- 右侧新年图片 -->
+        <img src="kk.png" alt="马到成功" class="right-new-year-image">
+        
+        <!-- 新年贺词 -->
+        <div class="new-year-wishes">
+            🎉 新年快乐！祝您学习进步，万事如意！🎉
+        </div>
+    <header>
+        <h1>ExamSure</h1>
+        <div style="display: flex; align-items: center;">
+            <span id="memberText"></span>
+            <button class="btn" onclick="showSoftwareIntro()" style="margin-left: 10px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">软件简介</button>
+            <button class="buy-member-btn" onclick="showBuyMenu()">购买会员</button>
+            <button class="btn" onclick="refreshMemberStatus()" style="margin-left: 10px; background-color: #2196F3;">刷新状态</button>
+            <a href="../admin/login.html" style="margin-left: 10px; color: #f59e0b; text-decoration: underline; font-size: 14px; font-weight: 600; cursor: pointer;">管理端</a>
+            <a href="guest.html" style="margin-left: 10px; color: #8b5cf6; text-decoration: underline; font-size: 14px; font-weight: 600; cursor: pointer;">游客版</a>
+            <a href="#" onclick="showCustomerService()" style="margin-left: 10px; color: #ec4899; text-decoration: underline; font-size: 14px; font-weight: 600; cursor: pointer;">客服服务</a>
+            <button class="btn" onclick="logout()" style="margin-left: 10px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">退出登录</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="member-status">
+            <h2>会员状态</h2>
+            <p id="memberStatus"></p>
+        </div>
+
+        <div class="paper-list">
+            <h2>试卷列表</h2>
+            <!-- 搜索和过滤功能 -->
+            <div style="margin-bottom: 20px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+                <h3 style="margin-bottom: 15px; color: #1e293b; font-size: 16px;">搜索与过滤</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="searchInput" style="font-size: 14px; margin-bottom: 5px; display: block; color: #64748b;">搜索标题</label>
+                        <input type="text" id="searchInput" placeholder="输入试卷标题" style="width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="priceTypeFilter" style="font-size: 14px; margin-bottom: 5px; display: block; color: #64748b;">价格类型</label>
+                        <select id="priceTypeFilter" style="width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                            <option value="">全部</option>
+                            <option value="free_all">全员免费</option>
+                            <option value="free_member">会员免费</option>
+                            <option value="paid">全部收费</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: end; gap: 10px;">
+                        <button class="btn" onclick="searchPapers()" style="padding: 8px 16px; font-size: 14px;">搜索</button>
+                        <button class="btn" onclick="resetFilters()" style="padding: 8px 16px; font-size: 14px; background: linear-gradient(135deg, #64748b 0%, #475569 100%);">重置</button>
+                    </div>
+                </div>
+            </div>
+            <div id="papersContainer"></div>
+        </div>
+    </div>
+
+    <!-- 购买菜单 -->
+    <div class="overlay" onclick="hideBuyMenu()"></div>
+    <div class="buy-menu">
+        <button class="close-btn" onclick="hideBuyMenu()">&times;</button>
+        <div class="buy-menu-content">
+            <!-- 左侧图片 -->
+            <div class="buy-menu-image">
+                <img src="%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202026-01-03%20130713.png" alt="新年贺图" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;">
+            </div>
+            
+            <!-- 右侧选项 -->
+            <div class="buy-menu-options">
+                <h2>选择会员时长</h2>
+                <div class="member-option" onclick="selectMember('1day')">
+                    <h3>1天会员</h3>
+                    <p>可下载试卷，有效期1天</p>
+                </div>
+                <div class="member-option" onclick="selectMember('1month')">
+                    <h3>1月会员</h3>
+                    <p>可下载试卷，有效期1个月</p>
+                </div>
+                <div class="member-option" onclick="selectMember('12year')">
+                    <h3>12年会员</h3>
+                    <p>可下载试卷，有效期12年</p>
+                </div>
+                <h3>支付方式：线下付款</h3>
+                <p>请完成线下付款后，点击下方按钮通知管理员确认</p>
+                <button class="pay-btn" onclick="confirmPayment()">确认支付</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 软件简介 -->
+    <div class="overlay" id="introOverlay" onclick="hideSoftwareIntro()"></div>
+    <div class="buy-menu" id="softwareIntro" style="background-color: black; border: none; box-shadow: none;">
+        <button class="close-btn" onclick="hideSoftwareIntro()" style="color: white;">&times;</button>
+        <div class="buy-menu-content" style="flex-direction: column; background-color: black; padding: 0;gap: 0;">
+            <div class="buy-menu-image" style="padding: 0;margin: 0;">
+                <img src="生成新年图片 (2).png" alt="ExamSure软件简介" style="width: 100%; height: auto; object-fit: contain; border-radius: 0;">
+            </div>
+            <!-- 图标容器 - 显示在主图下方 -->
+            <div class="intro-icons" style="display: flex; justify-content: center; align-items: center; padding: 20px 0; background-color: black;">
+                <img src="social_icons.png" alt="社交媒体图标" style="height: 40px; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMemberType = null;
+        let isMember = false;
+
+        // 显示客服服务模态框
+        function showCustomerService() {
+            event.preventDefault();
+            document.getElementById('customerServiceModal').style.display = 'flex';
+        }
+
+        // 关闭客服服务模态框
+        function closeCustomerServiceModal() {
+            document.getElementById('customerServiceModal').style.display = 'none';
+        }
+
+        // 创建雪花效果
+        function createSnowflakes() {
+            const snowflakeCount = 50;
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.style.left = Math.random() * window.innerWidth + 'px';
+                snowflake.style.top = Math.random() * window.innerHeight + 'px';
+                snowflake.style.width = Math.random() * 5 + 2 + 'px';
+                snowflake.style.height = snowflake.style.width;
+                snowflake.style.opacity = Math.random() * 0.8 + 0.2;
+                snowflake.style.animationDuration = Math.random() * 5 + 3 + 's';
+                snowflake.style.animationDelay = Math.random() * 2 + 's';
+                document.body.appendChild(snowflake);
+            }
+        }
+        
+        // 页面加载时检查登录状态
+        window.onload = function() {
+            // 添加新年装饰
+            createSnowflakes();
+            
+            // 检查是否已登录
+            const token = localStorage.getItem('token');
+            if (!token) {
+                // 未登录，跳转到登录页面
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // 已登录，继续加载页面
+            checkMemberStatus();
+            loadPapers();
+        };
+
+        // 检查会员状态
+        function checkMemberStatus() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                document.getElementById('memberStatus').innerHTML = '会员状态：未登录';
+                document.getElementById('memberText').textContent = '未登录 ';
+                return;
+            }
+            
+            fetch('http://192.168.1.12:5000/client/member/status', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    isMember = data.is_member;
+                    console.log('会员状态检查结果：', isMember);
+                    if (isMember) {
+                        document.getElementById('memberStatus').innerHTML = `会员状态：已开通，有效期至 ${new Date(data.member_end).toLocaleString()}`;
+                        document.getElementById('memberText').textContent = '会员已开通 ';
+                    } else {
+                        document.getElementById('memberStatus').innerHTML = '会员状态：未开通，开通后可下载试卷';
+                        document.getElementById('memberText').textContent = '非会员 ';
+                    }
+                    // 刷新试卷列表，更新下载按钮状态
+                    loadPapers();
+                }
+            })
+            .catch(error => {
+                console.error('获取会员状态失败：', error);
+            });
+        }
+        
+        // 手动刷新会员状态
+        function refreshMemberStatus() {
+            alert('正在刷新会员状态...');
+            checkMemberStatus();
+        }
+
+        // 加载试卷列表
+        function loadPapers(searchParams = {}) {
+            // 构建查询字符串
+            const queryString = new URLSearchParams(searchParams).toString();
+            const url = `http://192.168.1.12:5000/client/papers${queryString ? '?' + queryString : ''}`;
+            
+            fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const container = document.getElementById('papersContainer');
+                    container.innerHTML = '';
+                    
+                    if (data.papers.length === 0) {
+                        container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 40px;">没有找到匹配的试卷</p>';
+                        return;
+                    }
+                    
+                    data.papers.forEach(paper => {
+                        const paperItem = document.createElement('div');
+                        paperItem.className = 'paper-item';
+                        
+                        // 价格显示
+                        let priceText = '';
+                        if (paper.price_type === 'free_all') {
+                            priceText = '<span style="color: #10b981; font-weight: 600;">全员免费</span>';
+                        } else if (paper.price_type === 'free_member') {
+                            priceText = '<span style="color: #3b82f6; font-weight: 600;">会员免费</span>';
+                        } else {
+                            priceText = `
+                                <span style="text-decoration: line-through; color: #94a3b8; font-size: 14px;">¥${paper.original_price.toFixed(2)}</span>
+                                <span style="color: #ef4444; font-weight: 600; margin-left: 8px;">¥${paper.actual_price.toFixed(2)}</span>
+                                ${paper.is_member ? '<span style="color: #10b981; font-size: 12px; margin-left: 5px;">会员8折</span>' : ''}
+                            `;
+                        }
+                        
+                        // 按钮显示
+                        let buttonHTML = '';
+                        if (paper.can_download) {
+                            buttonHTML = '<button class="btn" onclick="previewPaper(' + paper.id + ')">预览</button> <button class="download-btn" onclick="downloadPaper(' + paper.id + ')">下载</button>';
+                        } else if (paper.price_type === 'paid') {
+                            buttonHTML = '<button class="btn" onclick="buyPaper(' + paper.id + ')" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">立即购买</button>';
+                        } else {
+                            buttonHTML = '<button class="download-btn disabled" disabled>不可下载</button>';
+                        }
+                        
+                        // 试卷预览
+                        let previewHTML = '';
+                        if (paper.preview_image) {
+                            previewHTML = `<div style="margin: 10px 0;"><img src="http://192.168.1.12:5000/uploads/${paper.preview_image}" alt="${paper.title}预览" style="max-width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="showPreview('${paper.preview_image}')"></div>`;
+                        }
+                        
+                        paperItem.innerHTML = `
+                            <div class="paper-title">${paper.title}</div>
+                            <div class="paper-info">分类：${paper.category_name} | 上传时间：${new Date(paper.upload_time).toLocaleString()}</div>
+                            <div class="paper-price" style="margin: 10px 0; font-size: 16px;">${priceText}</div>
+                            ${previewHTML}
+                            <div style="display: flex; gap: 10px;">${buttonHTML}</div>
+                        `;
+                        container.appendChild(paperItem);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('获取试卷列表失败：', error);
+            });
+        }
+        
+        // 搜索试卷
+        function searchPapers() {
+            const searchQuery = document.getElementById('searchInput').value;
+            const priceType = document.getElementById('priceTypeFilter').value;
+            
+            const searchParams = {};
+            if (searchQuery) searchParams.search = searchQuery;
+            if (priceType) searchParams.price_type = priceType;
+            
+            loadPapers(searchParams);
+        }
+        
+        // 重置过滤条件
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('priceTypeFilter').value = '';
+            loadPapers();
+        }
+        
+        // 显示预览图
+        function showPreview(imageUrl) {
+            // 创建预览模态框
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            modal.onclick = function() {
+                document.body.removeChild(modal);
+            };
+            
+            const img = document.createElement('img');
+            img.src = `http://192.168.1.12:5000/uploads/${imageUrl}`;
+            img.style.maxWidth = '90%';
+            img.style.maxHeight = '90%';
+            img.style.objectFit = 'contain';
+            img.onclick = function(e) {
+                e.stopPropagation();
+            };
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.style.position = 'absolute';
+            closeBtn.style.top = '20px';
+            closeBtn.style.right = '30px';
+            closeBtn.style.background = 'none';
+            closeBtn.style.border = 'none';
+            closeBtn.style.color = 'white';
+            closeBtn.style.fontSize = '30px';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.onclick = function() {
+                document.body.removeChild(modal);
+            };
+            
+            modal.appendChild(img);
+            modal.appendChild(closeBtn);
+            document.body.appendChild(modal);
+        }
+
+        // 显示购买菜单
+        function showBuyMenu() {
+            document.querySelector('.overlay').style.display = 'block';
+            document.querySelector('.buy-menu').style.display = 'block';
+        }
+
+        // 隐藏购买菜单
+        function hideBuyMenu() {
+            document.querySelector('.overlay').style.display = 'none';
+            document.querySelector('.buy-menu').style.display = 'none';
+        }
+        
+        // 显示软件简介
+        function showSoftwareIntro() {
+            document.getElementById('introOverlay').style.display = 'block';
+            document.getElementById('softwareIntro').style.display = 'block';
+        }
+        
+        // 隐藏软件简介
+        function hideSoftwareIntro() {
+            document.getElementById('introOverlay').style.display = 'none';
+            document.getElementById('softwareIntro').style.display = 'none';
+        }
+
+        // 选择会员类型
+        function selectMember(type) {
+            selectedMemberType = type;
+            // 移除所有选中样式
+            document.querySelectorAll('.member-option').forEach(option => {
+                option.style.borderColor = '#ddd';
+                option.style.backgroundColor = 'white';
+            });
+            // 添加选中样式
+            event.currentTarget.style.borderColor = '#4CAF50';
+            event.currentTarget.style.backgroundColor = '#f0fff0';
+        }
+
+        // 确认支付
+        function confirmPayment() {
+            if (!selectedMemberType) {
+                alert('请选择会员类型');
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('请先登录');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            fetch('http://192.168.1.12:5000/client/member/buy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ member_type: selectedMemberType })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('支付请求已提交，请等待管理员确认');
+                    hideBuyMenu();
+                } else {
+                    alert('提交失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('购买失败：', error);
+                alert('购买失败，请稍后重试');
+            });
+        }
+
+        // 预览试卷
+        function previewPaper(paperId) {
+            alert('预览模式维护中，暂不开放，请下载查看');
+            return;
+        }
+        
+        // 下载试卷
+        function downloadPaper(paperId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('请先登录');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // 使用fetch API下载文件，携带Authorization token
+            fetch(`http://192.168.1.12:5000/client/paper/download/${paperId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('下载失败');
+                }
+                // 获取文件名
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = 'exam_paper';
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename="?([^;"]+)"?/);
+                    if (match && match[1]) {
+                        filename = match[1];
+                    }
+                }
+                return response.blob().then(blob => ({
+                    blob,
+                    filename
+                }));
+            })
+            .then(({ blob, filename }) => {
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('下载失败：', error);
+                alert('下载失败，请稍后重试');
+            });
+        }
+        
+        // 购买试卷
+        function buyPaper(paperId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('请先登录');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            if (confirm('确定要购买这篇试卷吗？')) {
+                fetch(`http://192.168.1.12:5000/client/paper/buy/${paperId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    credentials: 'include'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`购买请求已提交，支付金额：¥${data.price.toFixed(2)}，请等待管理员确认后下载`);
+                        // 刷新试卷列表
+                        loadPapers();
+                    } else {
+                        alert('购买失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('购买失败：', error);
+                    alert('购买失败，请稍后重试');
+                });
+            }
+        }
+        
+        // 退出登录
+        function logout() {
+            // 清除本地存储的token和user_id
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_id');
+            // 跳转到登录页面
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <!-- 聊天功能 -->
+    <button class="chat-icon-btn" onclick="toggleChatModal()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 24px; box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); transition: all 0.3s ease; z-index: 9999;">💬</button>
+    
+    <!-- 聊天模态框 -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 600;">实时聊天</h2>
+            <button class="close-btn" onclick="toggleChatModal()" style="padding: 8px 12px; font-size: 16px; background: #ec4899; color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: 600; transition: all 0.3s ease; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">x</button>
+        </div>
+        <div style="display: flex; flex: 1; overflow: hidden; background-color: #f8fafc;">
+            <!-- 侧边栏：好友列表和房间列表 -->
+            <div style="width: 250px; background-color: white; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+                <!-- 好友列表 -->
+                <div style="padding: 16px;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #334155; font-weight: 600;">好友列表</h3>
+                    <div id="friendsList" style="max-height: 250px; overflow-y: auto;">
+                        <!-- 好友列表将在这里动态生成 -->
+                    </div>
+                    <!-- 添加好友功能 -->
+                    <div style="margin-top: 16px;">
+                        <input type="text" id="addFriendId" placeholder="输入用户ID" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; margin-bottom: 8px;">
+                        <button onclick="addFriend()" style="width: 100%; padding: 10px; background-color: #667eea; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">添加好友</button>
+                    </div>
+                </div>
+                <!-- 房间列表 -->
+                <div style="padding: 16px; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #334155; font-weight: 600;">房间列表</h3>
+                    <div id="roomsList" style="flex: 1; overflow-y: auto;">
+                        <!-- 房间列表将在这里动态生成 -->
+                    </div>
+                    <!-- 创建房间按钮 -->
+                    <button onclick="createRoom()" style="width: 100%; margin-top: 16px; padding: 10px; background-color: #667eea; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">创建群聊</button>
+                </div>
+            </div>
+            <!-- 聊天内容区域 -->
+            <div style="flex: 1; display: flex; flex-direction: column; background-color: #f8fafc;">
+                <div class="chat-body" id="chatBody" style="flex: 1; padding: 20px; overflow-y: auto; background-color: #f8fafc;">
+                    <!-- 聊天消息将在这里动态生成 -->
+                </div>
+                <div class="chat-footer" style="padding: 20px; background-color: white; border-top: 1px solid #e2e8f0;">
+                    <div class="chat-input-container" style="display: flex; gap: 12px; align-items: flex-end;">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)" style="flex: 1; padding: 14px 20px; border: 2px solid #e2e8f0; border-radius: 28px; font-size: 14px; outline: none; transition: all 0.3s ease; background-color: #f1f5f9;">
+                        <button class="send-btn" onclick="sendMessage()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px 24px; border-radius: 28px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease; min-width: 80px;">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 聊天功能相关代码
+        let socket = null;
+        let isChatOpen = false;
+        
+        // 聊天功能相关变量
+        let currentRoomId = 1; // 默认房间ID
+        let rooms = {};
+        let friends = [];
+        
+        // 初始化聊天功能
+        function initChat() {
+            // 连接WebSocket
+            socket = io('http://192.168.1.12:5000');
+            
+            // 连接事件
+            socket.on('connect', () => {
+                console.log('WebSocket连接成功');
+                // 加载好友列表
+                loadFriends();
+                // 加载房间列表
+                loadRooms();
+                // 加入默认聊天室
+                joinRoom(currentRoomId);
+                // 加载聊天历史
+                loadChatHistory(currentRoomId);
+            });
+            
+            // 接收消息事件
+            socket.on('receive_message', (data) => {
+                console.log('收到消息:', data);
+                // 如果是当前房间的消息，添加到聊天界面
+                if (data.room_id === currentRoomId) {
+                    addMessageToChat(data);
+                }
+            });
+            
+            // 断开连接事件
+            socket.on('disconnect', () => {
+                console.log('WebSocket连接断开');
+            });
+        }
+        
+        // 加载好友列表
+        function loadFriends() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            fetch('http://192.168.1.12:5000/api/friends', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    friends = data.friends;
+                    console.log('好友列表:', friends);
+                    // 渲染好友列表
+                    renderFriendsList();
+                }
+            })
+            .catch(error => {
+                console.error('加载好友列表失败:', error);
+            });
+        }
+        
+        // 渲染好友列表
+        function renderFriendsList() {
+            const friendsList = document.getElementById('friendsList');
+            friendsList.innerHTML = '';
+            
+            if (friends.length === 0) {
+                friendsList.innerHTML = '<p style="color: #64748b; font-size: 14px; text-align: center; padding: 20px 0;">暂无好友</p>';
+                return;
+            }
+            
+            friends.forEach(friend => {
+                const friendDiv = document.createElement('div');
+                friendDiv.style.padding = '10px 16px';
+                friendDiv.style.margin = '8px 0';
+                friendDiv.style.backgroundColor = '#f1f5f9';
+                friendDiv.style.borderRadius = '8px';
+                friendDiv.style.cursor = 'pointer';
+                friendDiv.style.transition = 'all 0.2s ease';
+                friendDiv.style.fontSize = '14px';
+                friendDiv.style.fontWeight = '500';
+                
+                friendDiv.onclick = () => {
+                    // 点击好友打开聊天窗口（私聊功能）
+                    // 这里可以实现私聊功能
+                    alert(`打开与 ${friend.username} 的私聊窗口`);
+                };
+                
+                friendDiv.onmouseover = () => {
+                    friendDiv.style.backgroundColor = '#e2e8f0';
+                    friendDiv.style.transform = 'translateX(4px)';
+                };
+                
+                friendDiv.onmouseout = () => {
+                    friendDiv.style.backgroundColor = '#f1f5f9';
+                    friendDiv.style.transform = 'translateX(0)';
+                };
+                
+                friendDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>${friend.username}</span>
+                        <span style="color: #64748b; font-size: 12px;">ID: ${friend.id}</span>
+                    </div>
+                    <div style="color: #64748b; font-size: 12px; margin-top: 4px;">${friend.email}</div>
+                `;
+                
+                friendsList.appendChild(friendDiv);
+            });
+        }
+        
+        // 加载房间列表
+        function loadRooms() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            fetch('http://192.168.1.12:5000/api/rooms', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    rooms = data.rooms;
+                    console.log('房间列表:', rooms);
+                    // 渲染房间列表
+                    renderRoomsList();
+                }
+            })
+            .catch(error => {
+                console.error('加载房间列表失败:', error);
+            });
+        }
+        
+        // 渲染房间列表
+        function renderRoomsList() {
+            const roomsList = document.getElementById('roomsList');
+            roomsList.innerHTML = '';
+            
+            if (rooms.length === 0) {
+                roomsList.innerHTML = '<p style="color: #64748b; font-size: 14px; text-align: center; padding: 20px 0;">暂无房间</p>';
+                return;
+            }
+            
+            rooms.forEach(room => {
+                const roomDiv = document.createElement('div');
+                roomDiv.style.padding = '10px 16px';
+                roomDiv.style.margin = '8px 0';
+                roomDiv.style.backgroundColor = '#f1f5f9';
+                roomDiv.style.borderRadius = '8px';
+                roomDiv.style.cursor = 'pointer';
+                roomDiv.style.transition = 'all 0.2s ease';
+                roomDiv.style.fontSize = '14px';
+                roomDiv.style.fontWeight = '500';
+                
+                roomDiv.onclick = () => {
+                    // 点击房间进入聊天室
+                    joinRoom(room.id);
+                };
+                
+                roomDiv.onmouseover = () => {
+                    roomDiv.style.backgroundColor = '#e2e8f0';
+                    roomDiv.style.transform = 'translateX(4px)';
+                };
+                
+                roomDiv.onmouseout = () => {
+                    roomDiv.style.backgroundColor = '#f1f5f9';
+                    roomDiv.style.transform = 'translateX(0)';
+                };
+                
+                roomDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>${room.name}</span>
+                        <span style="color: #64748b; font-size: 12px;">${room.is_group ? '群聊' : '私聊'}</span>
+                    </div>
+                    <div style="color: #64748b; font-size: 12px; margin-top: 4px;">创建时间: ${new Date(room.created_at).toLocaleString()}</div>
+                `;
+                
+                roomsList.appendChild(roomDiv);
+            });
+        }
+        
+        // 加入房间
+        function joinRoom(roomId) {
+            if (socket) {
+                socket.emit('join_room', { room: `room_${roomId}` });
+                currentRoomId = roomId;
+                // 加载该房间的聊天历史
+                loadChatHistory(roomId);
+            }
+        }
+        
+        // 加载聊天历史记录
+        function loadChatHistory(roomId) {
+            fetch(`http://192.168.1.12:5000/api/chat/history/${roomId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 清空聊天记录
+                        document.getElementById('chatBody').innerHTML = '';
+                        // 添加历史消息
+                        data.messages.forEach(message => {
+                            addMessageToChat(message);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('加载聊天历史失败:', error);
+                });
+        }
+        
+        // 添加消息到聊天界面
+        function addMessageToChat(message) {
+            const chatBody = document.getElementById('chatBody');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${message.sender_type}`;
+            messageDiv.style.marginBottom = '16px';
+            messageDiv.style.display = 'flex';
+            messageDiv.style.flexDirection = message.sender_type === 'admin' ? 'row' : 'row-reverse';
+            messageDiv.style.alignItems = 'flex-end';
+            messageDiv.style.gap = '12px';
+            
+            // 头像（可选）
+            const avatarDiv = document.createElement('div');
+            avatarDiv.style.width = '40px';
+            avatarDiv.style.height = '40px';
+            avatarDiv.style.borderRadius = '50%';
+            avatarDiv.style.background = message.sender_type === 'admin' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            avatarDiv.style.display = 'flex';
+            avatarDiv.style.alignItems = 'center';
+            avatarDiv.style.justifyContent = 'center';
+            avatarDiv.style.color = 'white';
+            avatarDiv.style.fontWeight = 'bold';
+            avatarDiv.style.marginBottom = '4px';
+            avatarDiv.textContent = message.sender_name.charAt(0);
+            
+            // 消息容器
+            const messageContainer = document.createElement('div');
+            messageContainer.style.maxWidth = '70%';
+            
+            // 消息气泡
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.style.padding = '12px 16px';
+            bubbleDiv.style.borderRadius = '16px';
+            bubbleDiv.style.wordWrap = 'break-word';
+            bubbleDiv.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+            
+            if (message.sender_type === 'admin') {
+                // 管理员消息样式
+                bubbleDiv.style.backgroundColor = 'white';
+                bubbleDiv.style.borderBottomLeftRadius = '4px';
+            } else {
+                // 用户消息样式
+                bubbleDiv.style.backgroundColor = '#667eea';
+                bubbleDiv.style.color = 'white';
+                bubbleDiv.style.borderBottomRightRadius = '4px';
+            }
+            
+            // 添加发送者姓名
+            const senderNameDiv = document.createElement('div');
+            senderNameDiv.style.fontSize = '12px';
+            senderNameDiv.style.opacity = '0.8';
+            senderNameDiv.style.marginBottom = '4px';
+            senderNameDiv.style.fontWeight = '600';
+            senderNameDiv.textContent = message.sender_name;
+            bubbleDiv.appendChild(senderNameDiv);
+            
+            // 添加消息内容
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.style.fontSize = '14px';
+            messageContentDiv.style.lineHeight = '1.5';
+            messageContentDiv.textContent = message.message;
+            bubbleDiv.appendChild(messageContentDiv);
+            
+            // 添加时间
+            const timeDiv = document.createElement('div');
+            timeDiv.style.fontSize = '11px';
+            timeDiv.style.opacity = '0.7';
+            timeDiv.style.marginTop = '4px';
+            timeDiv.style.textAlign = message.sender_type === 'admin' ? 'left' : 'right';
+            
+            // 格式化时间为：01 21:51:35
+            const sendTime = new Date(message.send_time);
+            const formattedTime = `${String(sendTime.getDate()).padStart(2, '0')} ${String(sendTime.getHours()).padStart(2, '0')}:${String(sendTime.getMinutes()).padStart(2, '0')}:${String(sendTime.getSeconds()).padStart(2, '0')}`;
+            timeDiv.textContent = formattedTime;
+            
+            bubbleDiv.appendChild(timeDiv);
+            messageContainer.appendChild(bubbleDiv);
+            
+            // 根据发送者类型添加到消息容器
+            if (message.sender_type === 'admin') {
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(messageContainer);
+            } else {
+                messageDiv.appendChild(messageContainer);
+                messageDiv.appendChild(avatarDiv);
+            }
+            
+            chatBody.appendChild(messageDiv);
+            
+            // 滚动到底部
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (message && socket) {
+                // 获取当前用户ID
+                const userId = localStorage.getItem('user_id') || 0;
+                
+                // 发送消息到服务器
+                socket.emit('send_message', {
+                    message: message,
+                    sender_id: parseInt(userId),
+                    sender_type: 'user',
+                    room_id: currentRoomId,
+                    room: `room_${currentRoomId}`
+                });
+                
+                // 清空输入框
+                chatInput.value = '';
+            }
+        }
+        
+        // 处理回车键发送消息
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // 切换聊天模态框显示/隐藏
+        function toggleChatModal() {
+            const chatModal = document.getElementById('chatModal');
+            isChatOpen = !isChatOpen;
+            
+            if (isChatOpen) {
+                chatModal.style.display = 'flex';
+                // 如果WebSocket未连接，初始化连接
+                if (!socket || !socket.connected) {
+                    initChat();
+                }
+            } else {
+                chatModal.style.display = 'none';
+            }
+        }
+        
+        // 添加好友功能
+        function addFriend() {
+            const friendId = document.getElementById('addFriendId').value.trim();
+            if (!friendId) {
+                alert('请输入用户ID');
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+            
+            fetch(`http://192.168.1.12:5000/api/friends/add/${friendId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('添加好友成功');
+                    document.getElementById('addFriendId').value = '';
+                    // 刷新好友列表
+                    loadFriends();
+                } else {
+                    alert('添加好友失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('添加好友失败:', error);
+                alert('添加好友失败，请稍后重试');
+            });
+        }
+        
+        // 创建群聊房间
+        function createRoom() {
+            const roomName = prompt('请输入群聊名称：');
+            if (!roomName) return;
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('请先登录');
+                return;
+            }
+            
+            fetch('http://192.168.1.12:5000/api/rooms', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: roomName,
+                    is_group: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('创建群聊成功');
+                    // 刷新房间列表
+                    loadRooms();
+                } else {
+                    alert('创建群聊失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('创建群聊失败:', error);
+                alert('创建群聊失败，请稍后重试');
+            });
+        }
+        
+        // 渲染好友列表
+        function renderFriendsList() {
+            const friendsList = document.getElementById('friendsList');
+            friendsList.innerHTML = '';
+            
+            friends.forEach(friend => {
+                const friendDiv = document.createElement('div');
+                friendDiv.style.padding = '8px';
+                friendDiv.style.marginBottom = '4px';
+                friendDiv.style.backgroundColor = '#e2e8f0';
+                friendDiv.style.borderRadius = '4px';
+                friendDiv.style.cursor = 'pointer';
+                friendDiv.style.fontSize = '14px';
+                friendDiv.style.transition = 'background-color 0.2s';
+                
+                friendDiv.innerHTML = `
+                    <div style="font-weight: 500;">${friend.username}</div>
+                    <div style="font-size: 12px; color: #64748b;">ID: ${friend.id}</div>
+                `;
+                
+                friendDiv.onclick = () => {
+                    // 这里可以添加好友私聊功能
+                    alert(`开始与 ${friend.username} 私聊`);
+                };
+                
+                friendDiv.onmouseover = () => {
+                    friendDiv.style.backgroundColor = '#cbd5e1';
+                };
+                
+                friendDiv.onmouseout = () => {
+                    friendDiv.style.backgroundColor = '#e2e8f0';
+                };
+                
+                friendsList.appendChild(friendDiv);
+            });
+        }
+        
+        // 渲染房间列表
+        function renderRoomsList() {
+            const roomsList = document.getElementById('roomsList');
+            roomsList.innerHTML = '';
+            
+            rooms.forEach(room => {
+                const roomDiv = document.createElement('div');
+                roomDiv.style.padding = '8px';
+                roomDiv.style.marginBottom = '4px';
+                roomDiv.style.backgroundColor = '#e2e8f0';
+                roomDiv.style.borderRadius = '4px';
+                roomDiv.style.cursor = 'pointer';
+                roomDiv.style.fontSize = '14px';
+                roomDiv.style.transition = 'background-color 0.2s';
+                
+                roomDiv.innerHTML = `
+                    <div style="font-weight: 500;">${room.name}</div>
+                    <div style="font-size: 12px; color: #64748b;">${room.is_group ? '群聊' : '私聊'}</div>
+                `;
+                
+                roomDiv.onclick = () => {
+                    // 切换到该房间
+                    joinRoom(room.id);
+                };
+                
+                roomDiv.onmouseover = () => {
+                    roomDiv.style.backgroundColor = '#cbd5e1';
+                };
+                
+                roomDiv.onmouseout = () => {
+                    roomDiv.style.backgroundColor = '#e2e8f0';
+                };
+                
+                roomsList.appendChild(roomDiv);
+            });
+        }
+        
+        // 更新loadFriends函数，添加渲染逻辑
+        function loadFriends() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            fetch('http://192.168.1.12:5000/api/friends', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    friends = data.friends;
+                    console.log('好友列表:', friends);
+                    // 渲染好友列表
+                    renderFriendsList();
+                }
+            })
+            .catch(error => {
+                console.error('加载好友列表失败:', error);
+            });
+        }
+        
+        // 更新loadRooms函数，添加渲染逻辑
+        function loadRooms() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            fetch('http://192.168.1.12:5000/api/rooms', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    rooms = data.rooms;
+                    console.log('房间列表:', rooms);
+                    // 渲染房间列表
+                    renderRoomsList();
+                }
+            })
+            .catch(error => {
+                console.error('加载房间列表失败:', error);
+            });
+        }
+        
+        // 在页面加载时初始化聊天功能
+        window.addEventListener('load', () => {
+            // 这里可以根据需要初始化聊天功能
+            // 例如：initChat();
+        });
+    </script>
+</body>
+</html>
